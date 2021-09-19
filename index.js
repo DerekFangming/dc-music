@@ -1,10 +1,12 @@
 const { Client, Intents } = require('discord.js');
 const ytdl = require("ytdl-core");
+const axios = require('axios');
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
 let queue = [];
 var playing = false;
+var looping = false;
 
 var player;
 
@@ -34,6 +36,13 @@ client.on('message', async (message) => {
       let trackUrl = '';
       if (keyword.includes('www.youtube.com') || keyword.includes('youtu.be')) {
           trackUrl = keyword;
+      } else {
+        try {
+          let response = await axios.get(`https://fmning.com/tools/api/discord/search_music/${keyword}`)
+          trackUrl = response.data;
+        } catch (err) {
+          return message.channel.send(`<@${message.author.id}> 暂时无法使用歌曲名播放音乐。请使用YouTube链接。`);
+        }
       }
 
       let songInfo = await ytdl.getInfo(trackUrl);
@@ -49,14 +58,61 @@ client.on('message', async (message) => {
         playing = true;
         play(voiceChannel);
       }
+    } else if (commands[1] == 'loop') {
+      looping = true;
     } else if (commands[1] == 'skip') {
-      player.end();
+      looping = false;
+      if (player != null) player.end();
     } else if (commands[1] == 'stop') {
       queue = [];
-      player.end();
+      if (player != null) player.end();
     } else if (commands[1] == 'queue' || commands[1] == 'q') {
-      console.log(queue);
-    } else if (commands[1] == 'test' || commands[1] == 't') {
+      if (queue.length == 0) {
+        message.channel.send({embed: {
+          title: '当前播放队列',
+          description: '当前播放队列中没有歌曲。使用以下指令添加歌曲到播放列表。 \n`!y play 歌曲名或者Youtube网址`'
+        }});
+      } else {
+        let count = 1;
+        let description = '';
+        for (song of queue) {
+          let text = `${count}. [${song.title}](${song.url})`;
+          if (count == 1) {
+            if (looping) {
+              text += '（正在循环播放）';
+            } else {
+              text += '（正在播放）';
+            }
+          }
+          text += '\n';
+
+          if (description.length + text.length < 1900) {
+            description += text;
+            count++;
+          } else {
+            description += `\n还有${queue.length - count + 1}首歌曲。`;
+            break;
+          }
+        }
+
+        message.channel.send({embed: {
+          title: '当前播放队列',
+          description: description
+        }});
+      }
+    } else if (commands[1] == 'help' || commands[1] == 'h') {
+      message.channel.send({embed: {
+        title: '妖风电竞 bot指令',
+        description: '**唱歌：**`!y play 关键字或者YouTube歌曲链接` or `!y p 歌曲名`\n' +
+        '**显示当前播放队列：**`!y queue` or `!y q`\n' +
+        '**循环或取消循环当前歌曲：**`!y loop`\n' +
+        '**跳过当前正在播放的歌曲：**`!y skip`\n' +
+        '**停止播放并清空播放队列：**`!y stop`\n'
+      }});
+    } else if (commands[1] == 'ping') {
+      return message.channel.send(`Bot operational. Latency ${client.ws.ping} ms`);
+    } else {
+      return message.channel.send(`<@${message.author.id}> 无法识别指令 **${message.content}**。请运行!y help查看指令说明。`);
     }
     
   } catch (err) {
@@ -65,33 +121,31 @@ client.on('message', async (message) => {
   }
 });
 
-function skip(message, serverQueue) {
-  if (!message.member.voice.channel)
-    return message.channel.send(
-      "You have to be in a voice channel to stop the music!"
-    );
-  if (!serverQueue)
-    return message.channel.send("There is no song that I could skip!");
-  serverQueue.connection.dispatcher.end();
-}
-
-
 async function play(voiceChannel) {
   let connection = await voiceChannel.join();
-  let song = queue.shift();
-  player = connection.play(ytdl(song.url, {filter: 'audioonly', quality: 'highestaudio', highWaterMark: 1<<25 }))
-    .on("finish", () => {
-      if (queue.length == 0) {
+  if (queue.length > 0) {
+    let song = queue[0];
+    player = connection.play(ytdl(song.url, {filter: 'audioonly', quality: 'highestaudio', highWaterMark: 1<<25 }))
+      .on("finish", () => {
+        if (looping && queue.length > 0) {
+          play(voiceChannel);
+        } else if (queue.length == 0) {
+          looping = false;
+          playing = false;
+        } else {
+          queue.shift();
+          play(voiceChannel);
+        }
+      })
+      .on("error", error => {
+        queue = [];
         playing = false;
-      } else {
-        play(voiceChannel);
-      }
-    })
-    .on("error", error => {
-      queue = [];
-      playing = false;
-      console.error(error);
-    });
+        console.error(error);
+      });
+  } else {
+    looping = false;
+    playing = false;
+  }
 }
 
 client.login(process.env.TL_DC_BOT_TOKEN);
