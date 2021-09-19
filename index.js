@@ -3,7 +3,7 @@ const ytdl = require("ytdl-core");
 const axios = require('axios');
 const say = require('say')
 const fs = require('fs');
-const token = process.argv.slice(2) == '' ? process.env.TL_DC_BOT_TOKEN : process.env.DC_MUSIC_BOT_TOKEN;
+// const token = process.argv.slice(2) == '' ? process.env.TL_DC_BOT_TOKEN : process.env.DC_MUSIC_BOT_TOKEN;
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
@@ -187,5 +187,5 @@ async function play(voiceChannel) {
   }
 }
 
-client.login(token);
+client.login(process.env.DC_MUSIC_BOT_TOKEN);
  
