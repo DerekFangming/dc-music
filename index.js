@@ -1,6 +1,9 @@
 const { Client, Intents } = require('discord.js');
 const ytdl = require("ytdl-core");
 const axios = require('axios');
+const say = require('say')
+var iconv = require('iconv-lite');
+const token = process.argv.slice(2) == '' ? process.env.TL_DC_BOT_TOKEN : process.env.DC_MUSIC_BOT_TOKEN;
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
@@ -111,7 +114,28 @@ client.on('message', async (message) => {
       }});
     } else if (commands[1] == 'ping') {
       return message.channel.send(`Bot operational. Latency ${client.ws.ping} ms`);
-    } else {
+    } else if (commands[1] == 'say') {
+
+      let content = message.content.split(' ').slice(2, commands.length).join(' ');
+      // if (!FS.existsSync('./temp')){
+      //   FS.mkdirSync('./temp');
+      // }
+      // say.setEncoding('gbk')
+      console.log(content);
+      buf = iconv.encode(content, 'gbk');
+      console.log(buf);
+      say.export(content, null, 1, `./temp/hal.wav`, (err) => {
+        if (err) {
+          return console.error(err)
+        }
+       
+        console.log('Text has been saved to hal.wav.')
+      });
+
+      // say.getInstalledVoices(callback => {
+      //   console.log(callback);
+      // })
+    }else {
       return message.channel.send(`<@${message.author.id}> 无法识别指令 **${message.content}**。请运行!y help查看指令说明。`);
     }
     
@@ -148,5 +172,5 @@ async function play(voiceChannel) {
   }
 }
 
-client.login(process.env.TL_DC_BOT_TOKEN);
+client.login(token);
  
