@@ -2,7 +2,7 @@ const { Client, Intents } = require('discord.js');
 const ytdl = require("ytdl-core");
 const axios = require('axios');
 const say = require('say')
-var iconv = require('iconv-lite');
+const fs = require('fs');
 const token = process.argv.slice(2) == '' ? process.env.TL_DC_BOT_TOKEN : process.env.DC_MUSIC_BOT_TOKEN;
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
@@ -116,26 +116,41 @@ client.on('message', async (message) => {
       return message.channel.send(`Bot operational. Latency ${client.ws.ping} ms`);
     } else if (commands[1] == 'say') {
 
+      let voiceChannel = message.member.voice.channel
+      if (!voiceChannel) {
+        return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
+      } else if (playing) {
+        return message.channel.send(`<@${message.author.id}> 忙着唱歌呢！没空说话。`);
+      }
+
       let content = message.content.split(' ').slice(2, commands.length).join(' ');
-      // if (!FS.existsSync('./temp')){
-      //   FS.mkdirSync('./temp');
-      // }
-      // say.setEncoding('gbk')
-      console.log(content);
-      buf = iconv.encode(content, 'gbk');
-      console.log(buf);
-      say.export(content, null, 1, `./temp/hal.wav`, (err) => {
+      if (!fs.existsSync('./temp')){
+        fs.mkdirSync('./temp');
+      }
+
+      let timestamp = new Date().getTime();
+      let soundPath = `./temp/${timestamp}.wav`;
+
+      let hasChinese = content.match(/[\u3400-\u9FBF]/)
+      let voice = (hasChinese != null) ? 'Ting-Ting' : null;
+
+      say.export(content, voice, 1, soundPath, (err) => {
         if (err) {
           return console.error(err)
+        } else {
+          voiceChannel.join().then((connection) => {
+            connection.play(soundPath).on('finish', () => {
+                fs.unlinkSync(soundPath);
+            }).on('error', (err) => {
+                console.error(err);
+                fs.unlinkSync(soundPath);
+            });
+        }).catch((err) => {
+            console.error(err);
+        });
         }
-       
-        console.log('Text has been saved to hal.wav.')
       });
-
-      // say.getInstalledVoices(callback => {
-      //   console.log(callback);
-      // })
-    }else {
+    } else {
       return message.channel.send(`<@${message.author.id}> 无法识别指令 **${message.content}**。请运行!y help查看指令说明。`);
     }
     
