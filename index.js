@@ -132,8 +132,8 @@ client.on('message', async (message) => {
       let soundPath = `./temp/${timestamp}.wav`;
 
       let voice = null
-      if (content.match(/[\u3400-\u9FBF]/) != null ) voice = 'Ting-Ting';
-      else if (content.match(/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/) != null ) voice = 'Kyoko';
+      if (content.match(/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/) != null ) voice = 'Kyoko';
+      else if (content.match(/[\u3400-\u9FBF]/) != null ) voice = 'Ting-Ting';
 
       say.export(content, voice, 1, soundPath, (err) => {
         if (err) {
