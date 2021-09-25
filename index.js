@@ -12,6 +12,8 @@ var playing = false;
 var looping = false;
 
 var player;
+// let guildId = '791892898878324768';// Test
+let guildId = '392553285971869697';// Yaofeng
 
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -135,20 +137,31 @@ client.on('message', async (message) => {
       if (content.match(/[\u3400-\u9FBF]/) != null ) voice = 'Ting-Ting';
       else if (content.match(/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/) != null ) voice = 'Kyoko';
 
-      say.export(content, voice, 1, soundPath, (err) => {
+      say.export(content, voice, 1, soundPath, async (err) => {
         if (err) {
           return console.error(err)
         } else {
-          voiceChannel.join().then((connection) => {
+          let connection;
+          let delay = 0;
+          if (client.voice.connections.get(guildId) != undefined) {
+            if (voiceChannel.id == client.voice.connections.get(guildId).channel.id) {
+              connection = client.voice.connections.get(guildId);
+            }
+          }
+          
+          if (connection == undefined) {
+            connection = await voiceChannel.join();
+            delay = 300;
+          }
+
+          setTimeout(function() {
             connection.play(soundPath).on('finish', () => {
-                fs.unlinkSync(soundPath);
+              fs.unlinkSync(soundPath);
             }).on('error', (err) => {
-                console.error(err);
-                fs.unlinkSync(soundPath);
+              console.error(err);
+              fs.unlinkSync(soundPath);
             });
-        }).catch((err) => {
-            console.error(err);
-        });
+          }, delay);
         }
       });
     } else {
