@@ -151,7 +151,7 @@ client.on('message', async (message) => {
           
           if (connection == undefined) {
             connection = await voiceChannel.join();
-            delay = 300;
+            delay = 400;
           }
 
           setTimeout(function() {
