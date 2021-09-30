@@ -122,7 +122,7 @@ client.on('message', async (message) => {
       if (!voiceChannel) {
         return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
       } else if (playing) {
-        return message.channel.send(`<@${message.author.id}> 忙着唱歌呢！没空说话。`);
+        return message.channel.send(`<@${message.author.id}> 正在唱歌。只有唱完或者使用\`yf stop\`停止唱歌之后才能说话。`);
       }
 
       let content = message.content.split(' ').slice(2, commands.length).join(' ');
@@ -151,7 +151,7 @@ client.on('message', async (message) => {
           
           if (connection == undefined) {
             connection = await voiceChannel.join();
-            delay = 400;
+            delay = 500;
           }
 
           setTimeout(function() {
