@@ -12,8 +12,7 @@ var playing = false;
 var looping = false;
 
 var player;
-// let guildId = '791892898878324768';// Test
-let guildId = '392553285971869697';// Yaofeng
+let guildId = process.env.PRODUCTION == 'true' ? '392553285971869697' : '791892898878324768';
 
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -35,6 +34,12 @@ client.on('message', async (message) => {
       let voiceChannel = message.member.voice.channel
       if (!voiceChannel) {
         return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
+      }
+
+      if (playing && client.voice.connections.get(guildId) != undefined) {
+        if (voiceChannel.id != client.voice.connections.get(guildId).channel.id) {
+          return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。`);
+        }
       }
 
       let keyword = message.content.split(' ').slice(2, commands.length).join(' ');
@@ -122,7 +127,7 @@ client.on('message', async (message) => {
       if (!voiceChannel) {
         return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
       } else if (playing) {
-        return message.channel.send(`<@${message.author.id}> 正在唱歌。只有唱完或者使用\`yf stop\`停止唱歌之后才能说话。`);
+        return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。`);
       }
 
       let content = message.content.split(' ').slice(2, commands.length).join(' ');
@@ -164,6 +169,18 @@ client.on('message', async (message) => {
           }, delay);
         }
       });
+    } else if (commands[1] == 'come') {
+      let voiceChannel = message.member.voice.channel
+      if (!voiceChannel) {
+        return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
+      }
+
+      if (playing && client.voice.connections.get(guildId) != undefined) {
+        if (voiceChannel.id != client.voice.connections.get(guildId).channel.id) {
+          return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。`);
+        }
+      }
+      await voiceChannel.join();
     } else {
       return message.channel.send(`<@${message.author.id}> 无法识别指令 **${message.content}**。请运行!y help查看指令说明。`);
     }
