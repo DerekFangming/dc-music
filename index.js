@@ -172,7 +172,7 @@ client.on('message', async (message) => {
     } else if (commands[1] == 'come') {
       let voiceChannel = message.member.voice.channel
       if (!voiceChannel) {
-        return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
+        return
       }
 
       if (playing && client.voice.connections.get(guildId) != undefined) {
