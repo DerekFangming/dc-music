@@ -127,7 +127,9 @@ client.on('message', async (message) => {
       if (!voiceChannel) {
         return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
       } else if (playing) {
-        return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。`);
+        let currentConnection = client.voice.connections.get(guildId);
+        let channelName = currentConnection != undefined ? "**" + currentConnection.channel.name + "**" : "";
+        return message.channel.send(`<@${message.author.id}> 当前正在**${channelName}**频道播放音乐。只有播放完成之后才能说话。`);
       }
 
       let content = message.content.split(' ').slice(2, commands.length).join(' ');
