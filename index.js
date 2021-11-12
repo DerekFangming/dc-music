@@ -1,8 +1,8 @@
-const { Client, Intents } = require('discord.js');
-const ytdl = require("ytdl-core");
-const axios = require('axios');
-const say = require('say')
-const fs = require('fs');
+const { Client, Intents } = require('discord.js')
+const ytdl = require("ytdl-core")
+const axios = require('axios')
+const fs = require('fs')
+const tts = require('./voice-rss-tts/index.js')
 // const token = process.argv.slice(2) == '' ? process.env.TL_DC_BOT_TOKEN : process.env.DC_MUSIC_BOT_TOKEN;
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
@@ -122,55 +122,15 @@ client.on('message', async (message) => {
     } else if (commands[1] == 'ping') {
       return message.channel.send(`Bot operational. Latency ${client.ws.ping} ms`);
     } else if (commands[1] == 'say') {
-
-      let voiceChannel = message.member.voice.channel
-      if (!voiceChannel) {
-        return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
-      } else if (playing) {
-        let currentConnection = client.voice.connections.get(guildId);
-        let channelName = currentConnection != undefined ? "**" + currentConnection.channel.name + "**" : "";
-        return message.channel.send(`<@${message.author.id}> 当前正在**${channelName}**频道播放音乐。只有播放完成之后才能说话。`);
-      }
-
-      let content = message.content.split(' ').slice(2, commands.length).join(' ');
-      if (!fs.existsSync('./temp')){
-        fs.mkdirSync('./temp');
-      }
-
-      let timestamp = new Date().getTime();
-      let soundPath = `./temp/${timestamp}.wav`;
-
-      let voice = null
-      if (content.match(/[\u3400-\u9FBF]/) != null ) voice = 'Ting-Ting';
-      else if (content.match(/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/) != null ) voice = 'Kyoko';
-
-      say.export(content, voice, 1, soundPath, async (err) => {
-        if (err) {
-          return console.error(err)
-        } else {
-          let connection;
-          let delay = 0;
-          if (client.voice.connections.get(guildId) != undefined) {
-            if (voiceChannel.id == client.voice.connections.get(guildId).channel.id) {
-              connection = client.voice.connections.get(guildId);
-            }
-          }
-          
-          if (connection == undefined) {
-            connection = await voiceChannel.join();
-            delay = 500;
-          }
-
-          setTimeout(function() {
-            connection.play(soundPath).on('finish', () => {
-              fs.unlinkSync(soundPath);
-            }).on('error', (err) => {
-              console.error(err);
-              fs.unlinkSync(soundPath);
-            });
-          }, delay);
-        }
-      });
+      say(message, commands, '')
+    } else if (commands[1] == 'sayj' || commands[1] =='sj') {
+      say(message, commands, 'j')
+    } else if (commands[1] == 'saym' || commands[1] =='sm') {
+      say(message, commands, 'm')
+    } else if (commands[1] == 'sayc' || commands[1] =='sc') {
+      say(message, commands, 'c')
+    } else if (commands[1] == 'saye' || commands[1] =='se') {
+      say(message, commands, 'e')
     } else if (commands[1] == 'come') {
       let voiceChannel = message.member.voice.channel
       if (!voiceChannel) {
@@ -218,6 +178,84 @@ async function play(voiceChannel) {
     looping = false;
     playing = false;
   }
+}
+
+async function say(message, commands, language) {
+  let voiceChannel = message.member.voice.channel
+      if (!voiceChannel) {
+        return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
+      } else if (playing) {
+        let currentConnection = client.voice.connections.get(guildId);
+        let channelName = currentConnection != undefined ? "**" + currentConnection.channel.name + "**" : "";
+        return message.channel.send(`<@${message.author.id}> 当前正在**${channelName}**频道播放音乐。只有播放完成之后才能说话。`);
+      }
+
+      let content = message.content.split(' ').slice(2, commands.length).join(' ');
+      if (!fs.existsSync('./temp')){
+        fs.mkdirSync('./temp');
+      }
+
+      let timestamp = new Date().getTime();
+      let soundPath = `./temp/${timestamp}.wav`;
+
+      let voice = null
+      if ('e' == language) {
+        voice = 'en-us'
+      } else if ('m' == language) {
+        voice = 'zh-cn'
+      } else if ('c' == language) {
+        voice = 'zh-hk'
+      } else if ('j' == language) {
+        voice = 'ja-jp'
+      } else {
+        if (content.match(/[\u3400-\u9FBF]/) != null ) voice = 'zh-cn'
+        else if (content.match(/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/) != null ) voice = 'ja-jp'
+        else voice = 'en-us'
+      }
+
+      tts.speech({
+        key: Math.random() < 0.5 ? '038f9e5ee5c54f899eebccf8aac3847a' : 'b189deef5c194efdaffab21e7c6e4b1a',
+        hl: voice,
+        src: content,
+        r: 0,
+        c: 'wav',
+        f: '16khz_16bit_mono',
+        ssml: false,
+        b64: false,
+        callback: function (error, content) {
+          if (error) {
+            return console.log(err);
+          }
+
+          fs.writeFile(soundPath, content, async function(err) {
+            if(err) {
+                return console.log(err);
+            }
+            let connection;
+
+            let delay = 0;
+            if (client.voice.connections.get(guildId) != undefined) {
+              if (voiceChannel.id == client.voice.connections.get(guildId).channel.id) {
+                connection = client.voice.connections.get(guildId);
+              }
+            }
+            
+            if (connection == undefined) {
+              connection = await voiceChannel.join();
+              delay = 500;
+            }
+
+            setTimeout(function() {
+              connection.play(soundPath).on('finish', () => {
+                fs.unlinkSync(soundPath);
+              }).on('error', (err) => {
+                console.error(err);
+                fs.unlinkSync(soundPath);
+              });
+            }, delay);
+          }); 
+        }
+      });
 }
 
 client.login(process.env.DC_MUSIC_BOT_TOKEN);
