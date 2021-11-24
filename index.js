@@ -258,4 +258,4 @@ async function say(message, commands, language) {
       });
 }
 
-client.login(process.env.DC_MUSIC_BOT_TOKENA);
+client.login(process.env.DC_MUSIC_BOT_TOKEN);
