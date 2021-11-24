@@ -3,7 +3,7 @@ const ytdl = require("ytdl-core")
 const axios = require('axios')
 const fs = require('fs')
 const tts = require('./voice-rss-tts/index.js')
-// const token = process.argv.slice(2) == '' ? process.env.TL_DC_BOT_TOKEN : process.env.DC_MUSIC_BOT_TOKEN;
+// const token = process.argv.slice(2) == '' ? process.env.TL_DC_BOT_TOKEN : process.env.DC_MUSIC_BOT_TOKEN; //test
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
