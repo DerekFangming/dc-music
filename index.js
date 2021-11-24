@@ -120,7 +120,7 @@ client.on('message', async (message) => {
         '**停止播放并清空播放队列：**`!y stop`\n'
       }});
     } else if (commands[1] == 'ping') {
-      return message.channel.send(`Bot operational. Latency ${client.ws.ping} ms!`);
+      return message.channel.send(`Bot operational. Latency ${client.ws.ping} ms`);
     } else if (commands[1] == 'say') {
       say(message, commands, '')
     } else if (commands[1] == 'sayj' || commands[1] =='sj') {
