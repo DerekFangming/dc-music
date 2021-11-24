@@ -196,7 +196,7 @@ async function say(message, commands, language) {
       }
 
       let timestamp = new Date().getTime();
-      let soundPath = `./temp/${timestamp}.wav`;
+      let soundPath = process.env.PRODUCTION == 'true' ? `/media/internal/tools/tts/${timestamp}.wav` : `./temp/${timestamp}.wav`
 
       let voice = null
       if ('e' == language) {
@@ -258,5 +258,4 @@ async function say(message, commands, language) {
       });
 }
 
-client.login(process.env.DC_MUSIC_BOT_TOKEN);
- 
+client.login(process.env.DC_MUSIC_BOT_TOKENA);
