@@ -13,6 +13,7 @@ var looping = false;
 
 var player;
 let guildId = process.env.PRODUCTION == 'true' ? '392553285971869697' : '791892898878324768';
+let delay = process.env.PRODUCTION == 'true' ? 5000 : 0;
 
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -258,4 +259,6 @@ async function say(message, commands, language) {
       });
 }
 
-client.login(process.env.DC_MUSIC_BOT_TOKEN);
+
+setTimeout(function() { client.login(process.env.DC_MUSIC_BOT_TOKEN); }, delay);
+
