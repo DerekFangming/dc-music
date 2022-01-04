@@ -39,7 +39,7 @@ client.on('message', async (message) => {
 
       if (playing && client.voice.connections.get(guildId) != undefined) {
         if (voiceChannel.id != client.voice.connections.get(guildId).channel.id) {
-          return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。请通过yf使用另外一个bot播放音乐。`);
+          return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。请通过\`yf play\`使用另外一个bot播放音乐。`);
         }
       }
 
@@ -49,7 +49,7 @@ client.on('message', async (message) => {
           trackUrl = keyword;
       } else {
         try {
-          let response = await axios.get('https://fmning.com/tools/api/discord/search_music/' + encodeURIComponent(keyword))
+          let response = await axios.get('https://fmning.com/yaofeng/api/search-music/' + encodeURIComponent(keyword))
           trackUrl = response.data;
         } catch (err) {
           return message.channel.send(`<@${message.author.id}> 暂时无法使用歌曲名播放音乐。请使用YouTube链接。`);
@@ -140,7 +140,7 @@ client.on('message', async (message) => {
 
       if (playing && client.voice.connections.get(guildId) != undefined) {
         if (voiceChannel.id != client.voice.connections.get(guildId).channel.id) {
-          return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。请通过yf使用另外一个bot播放音乐。`);
+          return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。请通过\`yf play\`使用另外一个bot播放音乐。`);
         }
       }
       await voiceChannel.join();
@@ -188,7 +188,7 @@ async function say(message, commands, language) {
       } else if (playing) {
         let currentConnection = client.voice.connections.get(guildId);
         let channelName = currentConnection != undefined ? "**" + currentConnection.channel.name + "**" : "";
-        return message.channel.send(`<@${message.author.id}> 当前正在**${channelName}**频道播放音乐。只有播放完成之后才能说话。请通过yf使用另外一个bot说话。`);
+        return message.channel.send(`<@${message.author.id}> 当前正在**${channelName}**频道播放音乐。只有播放完成之后才能说话。请通过\`yf say\`使用另外一个bot说话。`);
       }
 
       let content = message.content.split(' ').slice(2, commands.length).join(' ');
