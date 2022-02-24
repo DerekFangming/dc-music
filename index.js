@@ -182,16 +182,20 @@ async function play(voiceChannel) {
 }
 
 async function say(message, commands, language) {
+  let content = message.content.split(' ').slice(2, commands.length).join(' ')
+  if (content == null || content == '') {
+    return message.channel.send(`<@${message.author.id}> 请输入要说的话。`);
+  }
+
   let voiceChannel = message.member.voice.channel
       if (!voiceChannel) {
         return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`);
       } else if (playing) {
         let currentConnection = client.voice.connections.get(guildId);
         let channelName = currentConnection != undefined ? "**" + currentConnection.channel.name + "**" : "";
-        return message.channel.send(`<@${message.author.id}> 当前正在**${channelName}**频道播放音乐。只有播放完成之后才能说话。请通过\`yf say\`使用另外一个bot说话。`);
+        return message.channel.send(`<@${message.author.id}> 当前正在**${channelName}**频道播放音乐。只有播放完成之后才能说话。请通过\`yf say${language} ${content}\`使用另外一个bot说话。`);
       }
 
-      let content = message.content.split(' ').slice(2, commands.length).join(' ');
       if (!fs.existsSync('./temp')){
         fs.mkdirSync('./temp');
       }
