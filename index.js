@@ -251,7 +251,7 @@ async function say(message, commands, language) {
             }
 
             setTimeout(function() {
-              connection.play(soundPath, {volume: 3}).on('finish', () => {
+              connection.play(soundPath, {volume: 2}).on('finish', () => {
                 fs.unlinkSync(soundPath);
               }).on('error', (err) => {
                 console.error(err);
