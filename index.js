@@ -51,7 +51,7 @@ client.on('message', async (message) => {
           trackUrl = keyword
       } else {
         try {
-          let response = await axios.get('https://fmning.com/yaofeng/api/search-music/' + encodeURIComponent(keyword))
+          let response = await axios.get('https://yaofenggaming.com/api/search-music/' + encodeURIComponent(keyword))
           trackUrl = response.data
         } catch (err) {
           return message.channel.send(`<@${message.author.id}> 暂时无法使用歌曲名播放音乐。请使用YouTube链接。`)
