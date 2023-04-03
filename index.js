@@ -1,10 +1,11 @@
-const { Client, Intents } = require('discord.js')
-const ytdl = require("ytdl-core")
+const { Client, GatewayIntentBits } = require('discord.js')
+const ytdl = require("ytdl-core-discord")
 const axios = require('axios')
 const fs = require('fs')
 const tts = require('./voice-rss-tts/index.js')
+const dcVoice = require('@discordjs/voice')
 
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] })
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates] })
 
 let queue = []
 var playing = false
@@ -21,10 +22,10 @@ client.on('ready', async () => {
   client.channels.cache.get(logGuildChannelId).send(':sunny: 成功连接到服务器。')
 })
 
-client.on('message', async (message) => {
+client.on('messageCreate', async (message) => {
   try {
     let command = message.content.toLowerCase()
-    if (message.author.bot || !message.content.startsWith('!y')) return
+    if (message.author.bot || !command.startsWith('!y')) return
 
     let commands = command.split(' ')
 
@@ -39,8 +40,9 @@ client.on('message', async (message) => {
         return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`)
       }
 
-      if (playing && client.voice.connections.get(guildId) != undefined) {
-        if (voiceChannel.id != client.voice.connections.get(guildId).channel.id) {
+      if (playing && client.voice.adapters.get(guildId) != undefined) {
+        console.log(client.voice.adapters.get(guildId))
+        if (voiceChannel.id != client.voice.adapters.get(guildId).channel.id) {
           return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。请通过\`yf play\`使用另外一个bot播放音乐。`)
         }
       }
@@ -75,16 +77,16 @@ client.on('message', async (message) => {
       looping = true
     } else if (commands[1] == 'skip') {
       looping = false
-      if (player != null) player.end()
+      if (player != null) player.stop()
     } else if (commands[1] == 'stop') {
       queue = []
-      if (player != null) player.end()
+      if (player != null) player.stop()
     } else if (commands[1] == 'queue' || commands[1] == 'q') {
       if (queue.length == 0) {
-        message.channel.send({embed: {
+        message.channel.send({embeds: [{
           title: '当前播放队列',
           description: '当前播放队列中没有歌曲。使用以下指令添加歌曲到播放列表。 \n`!y play 歌曲名或者Youtube网址`'
-        }})
+        }]})
       } else {
         let count = 1
         let description = ''
@@ -108,20 +110,20 @@ client.on('message', async (message) => {
           }
         }
 
-        message.channel.send({embed: {
+        message.channel.send({embeds: [{
           title: '当前播放队列',
           description: description
-        }})
+        }]})
       }
     } else if (commands[1] == 'help' || commands[1] == 'h') {
-      message.channel.send({embed: {
+      message.channel.send({embeds: [{
         title: '妖风电竞 bot指令',
         description: '**唱歌：**`!y play 关键字或者YouTube歌曲链接` or `!y p 歌曲名`\n' +
         '**显示当前播放队列：**`!y queue` or `!y q`\n' +
         '**循环或取消循环当前歌曲：**`!y loop`\n' +
         '**跳过当前正在播放的歌曲：**`!y skip`\n' +
         '**停止播放并清空播放队列：**`!y stop`\n'
-      }})
+      }]})
     } else if (commands[1] == 'ping') {
       return message.channel.send(`Bot operational. Latency ${client.ws.ping} ms`)
     } else if (commands[1] == 'say') {
@@ -140,12 +142,17 @@ client.on('message', async (message) => {
         return
       }
 
-      if (playing && client.voice.connections.get(guildId) != undefined) {
-        if (voiceChannel.id != client.voice.connections.get(guildId).channel.id) {
+      if (playing && client.voice.adapters.get(guildId) != undefined) {
+        if (voiceChannel.id != client.voice.adapters.get(guildId).channel.id) {
           return message.channel.send(`<@${message.author.id}> 当前正在**${voiceChannel.name}**频道播放音乐。只有播放完成之后才能切换频道。请通过\`yf play\`使用另外一个bot播放音乐。`)
         }
       }
-      await voiceChannel.join()
+
+      await dcVoice.joinVoiceChannel({
+        channelId: voiceChannel.id,
+        guildId: voiceChannel.guildId,
+        adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+      })
     } else {
       return message.channel.send(`<@${message.author.id}> 无法识别指令 **${message.content}**。请运行!y help查看指令说明。`)
     }
@@ -157,26 +164,40 @@ client.on('message', async (message) => {
 })
 
 async function play(voiceChannel) {
-  let connection = await voiceChannel.join()
+  const connection = await dcVoice.joinVoiceChannel({
+    channelId: voiceChannel.id,
+    guildId: voiceChannel.guildId,
+    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+  })
   if (queue.length > 0) {
     let song = queue[0]
-    player = connection.play(ytdl(song.url, {filter: 'audioonly', quality: 'highestaudio', highWaterMark: 1<<25 }))
-      .on("finish", () => {
-        if (looping && queue.length > 0) {
-          play(voiceChannel)
-        } else if (queue.length == 0) {
-          looping = false
-          playing = false
-        } else {
-          queue.shift()
-          play(voiceChannel)
-        }
-      })
-      .on("error", error => {
-        queue = []
+    var stream = await ytdl(song.url, {filter: 'audioonly', quality: 'highestaudio', highWaterMark: 1<<25 })
+    player = dcVoice.createAudioPlayer()
+    connection.subscribe(player)
+    player.play(dcVoice.createAudioResource(stream, { inputType: dcVoice.StreamType.Opus }))
+
+    player.on(dcVoice.AudioPlayerStatus.Playing, () => console.log('playing'))
+    player.on(dcVoice.AudioPlayerStatus.Buffering, () => console.log('Buffering'))
+    player.on(dcVoice.AudioPlayerStatus.Paused, () => console.log('Paused'))
+    player.on(dcVoice.AudioPlayerStatus.AutoPaused, () => console.log('AutoPaused'))
+
+    player.on('error', error => {
+      queue = []
+      playing = false
+      console.error(error)
+    })
+
+    player.on(dcVoice.AudioPlayerStatus.Idle, () => {
+      if (looping && queue.length > 0) {
+        play(voiceChannel)
+      } else if (queue.length == 0) {
+        looping = false
         playing = false
-        console.error(error)
-      })
+      } else {
+        queue.shift()
+        play(voiceChannel)
+      }
+    })
   } else {
     looping = false
     playing = false
@@ -193,7 +214,7 @@ async function say(message, commands, language) {
       if (!voiceChannel) {
         return message.channel.send(`<@${message.author.id}> 你必须加入一个语音频道才能使用此指令。`)
       } else if (playing) {
-        let currentConnection = client.voice.connections.get(guildId)
+        let currentConnection = client.voice.adapters.get(guildId)
         let channelName = currentConnection != undefined ? "**" + currentConnection.channel.name + "**" : ""
         return message.channel.send(`<@${message.author.id}> 当前正在**${channelName}**频道播放音乐。只有播放完成之后才能说话。请通过\`yf say${language} ${content}\`使用另外一个bot说话。`)
       }
@@ -203,7 +224,7 @@ async function say(message, commands, language) {
       }
 
       let timestamp = new Date().getTime()
-      let soundPath = process.env.PRODUCTION == 'true' ? `/media/internal/tools/tts/${timestamp}.wav` : `./temp/${timestamp}.wav`
+      let soundPath = process.env.PRODUCTION == 'true' ? `/media/internal/tools/tts/${timestamp}.wav` : `F:/music/temp/${timestamp}.wav`//`./temp/${timestamp}.wav`
 
       let voice = null
       if ('e' == language) {
@@ -240,31 +261,40 @@ async function say(message, commands, language) {
             }
             let connection
 
-            let delay = 0
-            if (client.voice.connections.get(guildId) != undefined) {
-              if (voiceChannel.id == client.voice.connections.get(guildId).channel.id) {
-                connection = client.voice.connections.get(guildId)
+            let delay = 100
+            if (client.voice.adapters.get(guildId) != undefined) {
+              if (voiceChannel.id == client.voice.adapters.get(guildId).channel.id) {
+                connection = client.voice.adapters.get(guildId)
               }
             }
             
             if (connection == undefined) {
-              connection = await voiceChannel.join()
+              connection = await dcVoice.joinVoiceChannel({
+                channelId: voiceChannel.id,
+                guildId: voiceChannel.guildId,
+                adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+              })
               delay = 500
             }
 
-            setTimeout(function() {
-              connection.play(soundPath, {volume: 2}).on('finish', () => {
-                fs.unlinkSync(soundPath)
-              }).on('error', (err) => {
-                console.error(err)
+            setTimeout(async function() {
+              let player = dcVoice.createAudioPlayer()
+              connection.subscribe(player)
+              player.play(dcVoice.createAudioResource(soundPath, { inputType: dcVoice.StreamType.Opus }))
+
+              player.on('error', error => {
+                console.error(error)
                 fs.unlinkSync(soundPath)
               })
+              player.on(dcVoice.AudioPlayerStatus.Idle, () => {
+                fs.unlinkSync(soundPath)
+              })
+
             }, delay)
           })
         }
       })
 }
-
 
 setTimeout(function() { client.login(process.env.DC_MUSIC_BOT_TOKEN) }, startupDelay)
 
