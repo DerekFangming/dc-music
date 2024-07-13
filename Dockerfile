@@ -1,5 +1,7 @@
 FROM node:22-alpine3.19 AS builder
 
+RUN apk add --no-cache python3 py3-pip
+
 WORKDIR /app
 COPY . .
 
