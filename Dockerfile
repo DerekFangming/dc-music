@@ -16,4 +16,7 @@ FROM node:22-alpine3.19
 
 WORKDIR /app
 COPY --from=builder /app/dist .
+
+RUN npm i ffmpeg-static
+
 CMD ["node", "."]
