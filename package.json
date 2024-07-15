@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/voice": "^0.16.0",
+    "@discordjs/voice": "^0.17.0",
     "axios": "^0.21.1",
     "discord.js": "^14.9.0",
     "ffmpeg": "0.0.4",
